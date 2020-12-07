@@ -1,58 +1,89 @@
 import graphene
+from graphene import relay, ObjectType, Schema
 from graphene_django import DjangoObjectType
+from graphene_django.filter import DjangoFilterConnectionField
+from graphql_relay import from_global_id
 
 from backend_api.models import Company, Car, Sharing
 from django.contrib.auth.models import User
 
 
-class UserType(DjangoObjectType):
+class UserNode(DjangoObjectType):
     class Meta:
         model = User
-        fields = ("id", "username", "email", "sharing")
+        filter_fields = ["id", "username", "email", "sharing"]
+        interfaces = (relay.Node,)
 
 
-class SharingType(DjangoObjectType):
-    class Meta:
-        model = Sharing
-        fields = ("id", "user", "car", "created", "updated", "until")
-
-
-class CompanyType(DjangoObjectType):
-    class Meta:
-        model = Company
-        fields = ("id", "name", "cars")
-
-
-class CarType(DjangoObjectType):
+class CarNode(DjangoObjectType):
     class Meta:
         model = Car
-        fields = ("id", "name", "notes", "company", "sharing")
+        filter_fields = {
+            "id": ["exact"],
+            "name": ["exact", "icontains", "startswith"],
+            "notes": ["exact", "icontains"],
+            "company": ["exact"],
+            "sharing": ["exact"],
+        }
+        interfaces = (relay.Node,)
 
 
-class Query(graphene.ObjectType):
-    all_cars = graphene.List(CarType)
-    all_users = graphene.List(UserType)
-    all_sharing = graphene.List(SharingType)
-    all_companies = graphene.List(CompanyType)
-    company_by_name = graphene.Field(CompanyType, name=graphene.String(required=True))
-
-    def resolve_all_sharing(root, info):
-        return Sharing.objects.all()
-
-    def resolve_all_users(root, info):
-        return User.objects.all()
-
-    def resolve_all_companies(root, info):
-        return Company.objects.all()
-
-    def resolve_all_cars(root, info):
-        return Car.objects.select_related("company").all()
-
-    def resolve_company_by_name(root, info, name):
-        try:
-            return Company.objects.get(name=name)
-        except Company.DoesNotExist:
-            return None
+class SharingNode(DjangoObjectType):
+    class Meta:
+        model = Sharing
+        filter_fields = {
+            "id": ["exact"],
+            "user": ["exact"],
+            "user__username": ["exact", "icontains", "istartswith"],
+            "created": ["exact"],
+            "updated": ["exact"],
+            "until": ["exact"],
+            "car": ["exact"],
+            "car__name": ["exact", "icontains"],
+        }
+        interfaces = (relay.Node,)
 
 
-schema = graphene.Schema(query=Query)
+class CompanyNode(DjangoObjectType):
+    class Meta:
+        model = Company
+        filter_fields = ["id", "name", "cars"]
+        interfaces = (relay.Node,)
+
+
+class Query(ObjectType):
+    car = relay.Node.Field(CarNode)
+    all_cars = DjangoFilterConnectionField(CarNode)
+
+    user = relay.Node.Field(UserNode)
+    all_users = DjangoFilterConnectionField(UserNode)
+
+    sharing = relay.Node.Field(SharingNode)
+    all_sharing = DjangoFilterConnectionField(SharingNode)
+
+    company = relay.Node.Field(CompanyNode)
+    all_companies = DjangoFilterConnectionField(CompanyNode)
+
+
+class CreateCar(relay.ClientIDMutation):
+    class Input:
+        name = graphene.String(required=True)
+        notes = graphene.String(required=True)
+        company_id = graphene.String(required=True)
+
+    car = graphene.Field(CarNode)
+    company = graphene.Field(CompanyNode)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, name, notes, company_id):
+        [_, company_pk] = from_global_id(company_id)
+        car = Car.objects.create(name=name, notes=notes, company_id=company_pk)
+        company = Company.objects.get(pk=company_pk)
+        return CreateCar(car=car, company=company)
+
+
+class Mutation(ObjectType):
+    create_car = CreateCar.Field()
+
+
+schema = Schema(query=Query, mutation=Mutation)
