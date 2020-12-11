@@ -79,7 +79,7 @@ class CreateCompany(relay.ClientIDMutation):
 
 class DeleteCompany(relay.ClientIDMutation):
     class Input:
-        id = graphene.String(required=True)
+        id = graphene.ID(required=True)
 
     ok = graphene.Boolean()
 
