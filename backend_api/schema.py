@@ -20,7 +20,7 @@ class CarNode(DjangoObjectType):
         model = Car
         filter_fields = {
             "id": ["exact"],
-            "name": ["exact", "icontains", "startswith"],
+            "name": ["exact", "icontains", "istartswith"],
             "notes": ["exact", "icontains"],
             "company": ["exact"],
             "sharing": ["exact"],
@@ -65,6 +65,33 @@ class Query(ObjectType):
     all_companies = DjangoFilterConnectionField(CompanyNode)
 
 
+class CreateCompany(relay.ClientIDMutation):
+    class Input:
+        name = graphene.String(required=True)
+
+    company = graphene.Field(CompanyNode)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, name):
+        company = Company.objects.create(name=name)
+        return CreateCompany(company=company)
+
+
+class DeleteCompany(relay.ClientIDMutation):
+    class Input:
+        id = graphene.String(required=True)
+
+    ok = graphene.Boolean()
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, id):
+        [_, pk] = from_global_id(id)
+        company = Company.objects.filter(pk=pk)
+        ok = company.exists()
+        company.delete()
+        return DeleteCompany(ok=ok)
+
+
 class CreateCar(relay.ClientIDMutation):
     class Input:
         name = graphene.String(required=True)
@@ -83,6 +110,9 @@ class CreateCar(relay.ClientIDMutation):
 
 
 class Mutation(ObjectType):
+    create_company = CreateCompany.Field()
+    delete_company = DeleteCompany.Field()
+
     create_car = CreateCar.Field()
 
 
