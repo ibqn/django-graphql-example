@@ -3,6 +3,7 @@ graphene_django
 graphene
 django-filter
 djangorestframework
+django-graphql-jwt
 
 black
 flake8
