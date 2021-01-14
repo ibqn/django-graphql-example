@@ -1,4 +1,5 @@
 import graphene
+import graphql_jwt
 from graphene import relay, ObjectType, Schema
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
@@ -110,6 +111,13 @@ class CreateCar(relay.ClientIDMutation):
 
 
 class Mutation(ObjectType):
+    token_auth = graphql_jwt.relay.ObtainJSONWebToken.Field()
+    verify_token = graphql_jwt.relay.Verify.Field()
+    refresh_token = graphql_jwt.relay.Refresh.Field()
+    # token_auth = graphql_jwt.ObtainJSONWebToken.Field()
+    # verify_token = graphql_jwt.Verify.Field()
+    # refresh_token = graphql_jwt.Refresh.Field()
+
     create_company = CreateCompany.Field()
     delete_company = DeleteCompany.Field()
 
