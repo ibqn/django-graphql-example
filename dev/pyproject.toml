@@ -1,20 +1,20 @@
 [tool.poetry]
+authors = ["ibqn"]
+description = ""
 name = "django-graphql-example"
 version = "0.1.0"
-description = ""
-authors = ["ibqn"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-django-graphql-jwt = "^0.3.2"
 Django = "^3.2"
-graphene-django = "3.0.0b1"
-graphene = "3.0.0b1"
 django-filter = "^2.4.0"
+django-graphql-jwt = "^0.3.2"
 djangorestframework = "^3.12.4"
+graphene = "3.0.0b1"
+graphene-django = "3.0.0b1"
+python = "^3.8"
 
 [tool.poetry.dev-dependencies]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
