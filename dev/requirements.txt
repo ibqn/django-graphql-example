@@ -4,7 +4,6 @@ graphene
 django-filter
 djangorestframework
 django-graphql-jwt
-pyjwt<2
 
 black
 flake8
